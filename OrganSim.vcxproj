@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="deps\glad\src\glad.c" />
+    <ClCompile Include="deps\PerlinNoiseCpp\src\Perlin.cpp" />
     <ClCompile Include="source\error.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\shaderProgram.cpp" />
