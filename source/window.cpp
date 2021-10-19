@@ -93,7 +93,7 @@ void Window::run(){
 
 
 		// Run simulation for a few steps, then render
-		solver_.solve(100);
+		solver_.solveSteps(10);
 		updateMouse();
 		render();
 		glfwSwapBuffers(window_);

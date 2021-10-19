@@ -66,20 +66,31 @@ void Window::cleanupRendering(){
 
 void Window::render(){
 	
-	// Set texture data
 	int domSizeX = solver_.getDomainSizeX();
 	int domSizeY = solver_.getDomainSizeY();
+	int lisX = solver_.getListeningX();
+	int lisY = solver_.getListeningY();
 
+	// Set texture data
 	for(int x = 0; x < domSizeX; x++){
 		for(int y = 0; y < domSizeX; y++){
 
 			// Pixel index
 			int i = (y * domSizeX) + x;
 
-			// Set air cells to color based on pressure
-			if(solver_.getCell(x, y).material.name == "air"){
+			// Draw listening position as green
+			if(x == lisX && y == lisY){
+				textureData_[i * 3]		= 0;
+				textureData_[i * 3 + 1]	= 255;
+				textureData_[i * 3 + 2]	= 0;
+			}
 
-				float p = solver_.getCell(x, y).pressure * 1;
+			// Set air cells to color based on pressure
+			else if(solver_.getCell(x, y).material.name == "air"){
+
+				// Get pressure and clamp to -1 to 1 range
+				float p = solver_.getCell(x, y).pressure;
+				p = p > 1 ? 1 : p < -1 ? -1 : p;
 
 				// High pressure - red, low pressure - blue
 				if(p >= 0){

@@ -11,6 +11,7 @@
 
 #include<vector>
 #include<string>
+#include<Perlin.h>
 
 using std::vector;
 using std::string;
@@ -22,6 +23,9 @@ using std::string;
 // Time step / Cell size
 #define SIM_TIME_STEP 0.00000781
 #define SIM_CELL_SIZE 0.00383
+
+// PML size in cells
+#define SIM_PML_SIZE 6
 
 
 // Material type for simulation cell
@@ -50,6 +54,8 @@ class Solver{
 	float cellSize_;
 
 	vector<vector<SimCell>> domain_;
+	vector<float> pmlX_;
+	vector<float> pmlY_;
 	int domainSizeX_;
 	int domainSizeY_;
 
@@ -58,6 +64,8 @@ class Solver{
 
 	SimMaterial matAir_;
 	SimMaterial matSolid_;
+
+	Perlin noise_;
 
 	int stepNumber_;
 	double lastSampleTime_;
@@ -70,7 +78,10 @@ public:
 	void solveSeconds(float seconds);
 
 	// Run simulation for given number of steps
-	void solve(int steps);
+	void solveSteps(int steps);
+
+	// Run single simulation step
+	void solveStep();
 
 
 	float getCellSize();
@@ -79,6 +90,8 @@ public:
 
 	int getDomainSizeX();
 	int getDomainSizeY();
+	int getListeningX();
+	int getListeningY();
 
 	const vector<float>& getOutput();
 };
