@@ -1,7 +1,9 @@
 #include<iostream>
 #include<AudioFile.h>
+#include<MidiFile.h>
 #include"solver.h"
 #include"window.h"
+#include "../MidiData.h"
 
 using std::cout;
 using std::endl;
@@ -17,9 +19,28 @@ using std::endl;
 #define LISTENING_Y 0.5f
 
 #define DEBUG_VIS
+//#define DEBUG_MIDI
 
+struct Track;
 
 int main(){
+#ifdef DEBUG_MIDI
+	cout << "Printing MIDI Data: " << endl;
+
+	MidiData data("E:/test.mid");
+	Track* track = &data.tracks.at(2); // First two tracks of the test.mid file are empty
+
+	auto numNotes = track->numNotes;
+	auto notes = track->notes;
+
+	for (auto i = 0; i < numNotes; i++)
+	{
+		cout << notes[i][0] << '\t' << notes[i][1] << '\t' << notes[i][2] << endl;
+	}
+
+	cout << "MIDI Data Complete." << endl;
+	return 0;
+#endif
 
 	cout << "Starting simulation!" << endl;
 
