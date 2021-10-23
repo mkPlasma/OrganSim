@@ -39,6 +39,7 @@ class Window{
 
 	GLuint vao_;
 	GLuint vBuffer_;
+	GLuint tcBuffer_;
 	GLuint texture_;
 	vector<GLubyte> textureData_;
 

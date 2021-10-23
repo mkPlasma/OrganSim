@@ -1,10 +1,9 @@
 #include"window.h"
 
 #include<iterator>
+#include<algorithm>
 
-#include<iostream>
-using std::cout;
-using std::endl;
+using std::max;
 
 
 void Window::initRendering(){
@@ -16,8 +15,28 @@ void Window::initRendering(){
 	shader_.link();
 	shader_.use();
 
+	int domSizeX = solver_.getDomainSizeX();
+	int domSizeY = solver_.getDomainSizeY();
+	int domSizeMax = max(domSizeX, domSizeY);
+	float sizeX = ((float)domSizeX / domSizeMax) / 2;
+	float sizeY = ((float)domSizeY / domSizeMax) / 2;
+	float x1 = 0.5f - sizeX;
+	float x2 = 0.5f + sizeX;
+	float y1 = 0.5f - sizeY;
+	float y2 = 0.5f + sizeY;
+
 	// Render quad
-	const float vertices[] = {
+	float vertices[] = {
+		x1,		y1,
+		x1,		y2,
+		x2,		y1,
+
+		x1,		y2,
+		x2,		y2,
+		x2,		y1
+	};
+
+	float texCoords[] = {
 		0, 0,
 		0, 1,
 		1, 0,
@@ -39,6 +58,14 @@ void Window::initRendering(){
 	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+	// Create texture coordinate buffer
+	glGenBuffers(1, &tcBuffer_);
+	glBindBuffer(GL_ARRAY_BUFFER, tcBuffer_);
+
+	// Write data
+	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), texCoords, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -53,7 +80,7 @@ void Window::initRendering(){
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	textureData_ = vector<GLubyte>(solver_.getDomainSizeX() * solver_.getDomainSizeY() * 3);
+	textureData_ = vector<GLubyte>(domSizeX * domSizeY * 3);
 }
 
 void Window::cleanupRendering(){
@@ -68,40 +95,42 @@ void Window::render(){
 	
 	int domSizeX = solver_.getDomainSizeX();
 	int domSizeY = solver_.getDomainSizeY();
-	int lisX = solver_.getListeningX();
-	int lisY = solver_.getListeningY();
+
+	// Get maximum pressure
+	float maxPressure = 0;
+
+	if(maxPressure == 0)
+		for(int x = 0; x < domSizeX; x++)
+			for(int y = 0; y < domSizeY; y++)
+				if(!solver_.getCell(x, y).excitation)
+					maxPressure = max(maxPressure, abs(solver_.getCell(x, y).pressure));
+
+	maxPressure /= 2;
 
 	// Set texture data
 	for(int x = 0; x < domSizeX; x++){
-		for(int y = 0; y < domSizeX; y++){
+		for(int y = 0; y < domSizeY; y++){
 
 			// Pixel index
 			int i = (y * domSizeX) + x;
 
-			// Draw listening position as green
-			if(x == lisX && y == lisY){
-				textureData_[i * 3]		= 0;
-				textureData_[i * 3 + 1]	= 255;
-				textureData_[i * 3 + 2]	= 0;
-			}
-
 			// Set air cells to color based on pressure
-			else if(solver_.getCell(x, y).material.name == "air"){
+			if(!solver_.getCell(x, y).solid){
 
 				// Get pressure and clamp to -1 to 1 range
-				float p = solver_.getCell(x, y).pressure;
+				float p = solver_.getCell(x, y).pressure / maxPressure;
 				p = p > 1 ? 1 : p < -1 ? -1 : p;
 
 				// High pressure - red, low pressure - blue
 				if(p >= 0){
-					textureData_[i * 3]		= 32 + (GLubyte)(p * 223);
-					textureData_[i * 3 + 1] = 32;
-					textureData_[i * 3 + 2] = 32;
+					textureData_[i * 3]		= 16 + (GLubyte)(p * 239);
+					textureData_[i * 3 + 1] = 16;
+					textureData_[i * 3 + 2] = 16;
 				}
 				else{
-					textureData_[i * 3]		= 32;
-					textureData_[i * 3 + 1] = 32;
-					textureData_[i * 3 + 2] = 32 + (GLubyte)(-p * 223);
+					textureData_[i * 3]		= 16;
+					textureData_[i * 3 + 1] = 16;
+					textureData_[i * 3 + 2] = 16 + (GLubyte)(-p * 239);
 				}
 			}
 
@@ -113,6 +142,19 @@ void Window::render(){
 			}
 		}
 	}
+
+	// Draw source position as yellow
+	int i = (solver_.getSourceY() * domSizeX) + solver_.getSourceX();
+	textureData_[i * 3] = 255;
+	textureData_[i * 3 + 1] = 255;
+	textureData_[i * 3 + 2] = 0;
+
+	// Draw listening position as green
+	i = (solver_.getListeningY() * domSizeX) + solver_.getListeningX();
+	textureData_[i * 3] = 0;
+	textureData_[i * 3 + 1] = 255;
+	textureData_[i * 3 + 2] = 0;
+
 
 	// Write texture data
 	glBindTexture(GL_TEXTURE_2D, texture_);
@@ -131,8 +173,10 @@ void Window::render(){
 	glBindVertexArray(vao_);
 
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);

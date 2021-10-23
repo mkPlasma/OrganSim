@@ -68,7 +68,7 @@ void Window::init(){
 	
 	cameraX_ = 0;
 	cameraY_ = 0;
-	zoom_ = 600;
+	zoom_ = 700;
 
 	// Set mouse wheel callback function
 	glfwSetWindowUserPointer(window_, this);
@@ -140,9 +140,9 @@ void Window::mouseScroll(double yoffset){
 	else if(yoffset < 0)
 		zoom_ /= 1.5;
 
-	if(zoom_ < 100)
-		zoom_ = 100;
-	else if(zoom_ > 2000)
-		zoom_ = 2000;
+	if(zoom_ < 500)
+		zoom_ = 500;
+	else if(zoom_ > 4000)
+		zoom_ = 4000;
 }
 
