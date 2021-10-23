@@ -1,4 +1,4 @@
-#include "MidiData.h"
+#include "midiData.h"
 
 #include <iostream>
 #include <map>
@@ -6,12 +6,6 @@
 #include <ostream>
 #include <string>
 #include <vector>
-
-struct Track
-{
-	double** notes;
-	int numNotes;
-};
 
 struct NoteInfo
 {
@@ -65,7 +59,7 @@ MidiData::MidiData(const std::string &filename)
 		}
 
 		double** notesArray = new double* [notes.size()];
-		for(auto noteIndex = 0; i < notes.size(); noteIndex++)
+		for(auto noteIndex = 0; noteIndex < notes.size(); noteIndex++)
 		{
 			notesArray[noteIndex] = new double[3];
 			notesArray[noteIndex][0] = (double)notes.at(noteIndex)->keyNumber;

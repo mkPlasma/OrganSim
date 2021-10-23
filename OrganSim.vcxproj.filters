@@ -57,7 +57,7 @@
     <ClCompile Include="deps\MidiFile\src\Options.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MidiData.cpp">
+    <ClCompile Include="source\MidiData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,7 +74,7 @@
     <ClInclude Include="source\error.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MidiData.h">
+    <ClInclude Include="source\MidiData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

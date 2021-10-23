@@ -159,16 +159,16 @@
     <ClCompile Include="deps\MidiFile\src\MidiFile.cpp" />
     <ClCompile Include="deps\MidiFile\src\MidiMessage.cpp" />
     <ClCompile Include="deps\MidiFile\src\Options.cpp" />
-    <ClCompile Include="MidiData.cpp" />
     <ClCompile Include="source\error.cpp" />
     <ClCompile Include="source\main.cpp" />
+    <ClCompile Include="source\MidiData.cpp" />
     <ClCompile Include="source\shaderProgram.cpp" />
     <ClCompile Include="source\solver.cpp" />
     <ClCompile Include="source\window.cpp" />
     <ClCompile Include="source\windowRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MidiData.h" />
+    <ClInclude Include="source\MidiData.h" />
     <ClInclude Include="source\error.h" />
     <ClInclude Include="source\shaderProgram.h" />
     <ClInclude Include="source\solver.h" />

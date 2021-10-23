@@ -3,7 +3,7 @@
 #include<MidiFile.h>
 #include"solver.h"
 #include"window.h"
-#include "../MidiData.h"
+#include"midiData.h"
 
 using std::cout;
 using std::endl;
@@ -21,8 +21,6 @@ using std::endl;
 #define DEBUG_VIS
 //#define DEBUG_MIDI
 
-struct Track;
-
 int main(){
 #ifdef DEBUG_MIDI
 	cout << "Printing MIDI Data: " << endl;
@@ -33,12 +31,13 @@ int main(){
 	auto numNotes = track->numNotes;
 	auto notes = track->notes;
 
-	for (auto i = 0; i < numNotes; i++)
+	for(auto i = 0; i < numNotes; i++)
 	{
 		cout << notes[i][0] << '\t' << notes[i][1] << '\t' << notes[i][2] << endl;
 	}
 
 	cout << "MIDI Data Complete." << endl;
+	system("pause");
 	return 0;
 #endif
 
