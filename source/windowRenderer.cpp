@@ -3,6 +3,7 @@
 #include<iterator>
 #include<algorithm>
 
+using std::min;
 using std::max;
 
 
@@ -96,7 +97,7 @@ void Window::render(){
 	int domSizeX = solver_.getDomainSizeX();
 	int domSizeY = solver_.getDomainSizeY();
 
-	// Get maximum pressure
+	// Get maximum pressure for cell coloration
 	float maxPressure = 0;
 
 	if(maxPressure == 0)
@@ -105,7 +106,9 @@ void Window::render(){
 				if(!solver_.getCell(x, y).excitation)
 					maxPressure = max(maxPressure, abs(solver_.getCell(x, y).pressure));
 
-	maxPressure /= 2;
+	// Allow some clipping to increase contrast
+	maxPressure /= 4;
+
 
 	// Set texture data
 	for(int x = 0; x < domSizeX; x++){
@@ -119,7 +122,7 @@ void Window::render(){
 
 				// Get pressure and clamp to -1 to 1 range
 				float p = solver_.getCell(x, y).pressure / maxPressure;
-				p = p > 1 ? 1 : p < -1 ? -1 : p;
+				p = max(-1.0f, min(p, 1.0f));
 
 				// High pressure - red, low pressure - blue
 				if(p >= 0){
@@ -143,17 +146,23 @@ void Window::render(){
 		}
 	}
 
-	// Draw source position as yellow
-	int i = (solver_.getSourceY() * domSizeX) + solver_.getSourceX();
-	textureData_[i * 3] = 255;
-	textureData_[i * 3 + 1] = 255;
-	textureData_[i * 3 + 2] = 0;
+	// Draw excitation cells as magenta
+	int ind = (solver_.getSourceY() * domSizeX) + solver_.getSourceX();
+	int width = solver_.getPipeSizeX();
+	float u = -solver_.getUBore() / 0.0001f;
+	u = min(u, 1.0f);
+
+	for(int i = 0; i < width; i++){
+		textureData_[(ind + i) * 3]		= (GLubyte)(255 * u);
+		textureData_[(ind + i) * 3 + 1]	= 0;
+		textureData_[(ind + i) * 3 + 2]	= (GLubyte)(255 * u);
+	}
 
 	// Draw listening position as green
-	i = (solver_.getListeningY() * domSizeX) + solver_.getListeningX();
-	textureData_[i * 3] = 0;
-	textureData_[i * 3 + 1] = 255;
-	textureData_[i * 3 + 2] = 0;
+	ind = (solver_.getListeningY() * domSizeX) + solver_.getListeningX();
+	textureData_[ind * 3]		= 0;
+	textureData_[ind * 3 + 1]	= 255;
+	textureData_[ind * 3 + 2]	= 0;
 
 
 	// Write texture data

@@ -8,18 +8,7 @@ using std::cout;
 using std::endl;
 
 
-// Domain size / listening position constants
-// These should be set based on the models/user input later
-#define DOMAIN_SIZE_X 0.12f
-#define DOMAIN_SIZE_Y 0.5f
-
-#define SOURCE_X 0.042f
-#define SOURCE_Y 0.435f
-
-#define LISTENING_X 0.02f
-#define LISTENING_Y 0.05f
-
-#define DEBUG_VIS
+//#define DEBUG_VIS
 //#define DEBUG_MIDI
 
 
@@ -45,10 +34,21 @@ int main(){
 
 	cout << "Starting simulation!" << endl;
 
-	float secondsToSolve = 5;
 	string fileName = "test";
+	float secondsToSolve = 2;
 
-	Solver solver(DOMAIN_SIZE_X, DOMAIN_SIZE_Y, SOURCE_X, SOURCE_Y, LISTENING_X, LISTENING_Y);
+	// Test pipe
+	// TODO: remove this, load this data from file
+	PipeParameters params;
+	params.pipeWidth = 1.16e-2f;
+	params.pipeLength = 36e-2f;
+
+	params.maxPressure = 2000;
+	params.flueWidth = 0.0552e-3f;
+	params.mouthSize = 12e-3f;
+	params.labiumOffset = 0.1e-3f;
+
+	Solver solver(params);
 
 #ifdef DEBUG_VIS
 	Window window(solver);
@@ -65,7 +65,7 @@ int main(){
 
 	AudioFile<float> file;
 	file.setNumChannels(2);
-	file.setNumSamplesPerChannel(output.size());
+	file.setNumSamplesPerChannel((int)output.size());
 
 	// Normalize audio level, temporary
 	// TODO: remove this
@@ -74,7 +74,7 @@ int main(){
 	for(float f : output)
 		max = abs(f) > max ? abs(f) : max;
 
-	max /= 0.5;
+	max /= 0.5f;
 
 	// Write data
 	for(int i = 0; i < output.size(); i++){

@@ -11,79 +11,45 @@ using organSim::fatalError;
 using organSim::error;
 
 
-Solver::Solver(float sizeX, float sizeY, float sourceX, float sourceY, float listeningX, float listeningY) :
-	stepNumber_(0), nextSampleStep_(0) {
+Solver::Solver(PipeParameters params) : params_(params), stepNumber_(0), nextSampleStep_(0) {
+
+	// Get pipe size in cells
+	pipeSizeX_ = (int)round(params_.pipeWidth / SIM_CELL_SIZE);
+	pipeSizeY_ = (int)round(params_.pipeLength / SIM_CELL_SIZE);
 
 	// Initialize domain
-	domainSizeX_ = (int)round(sizeX / SIM_CELL_SIZE);
-	domainSizeY_ = (int)round(sizeY / SIM_CELL_SIZE);
+	domainSizeX_ = pipeSizeX_ + (2 * SIM_DIST_TO_PIPE) + 2;
+	domainSizeY_ = pipeSizeY_ + (2 * SIM_DIST_TO_PIPE) + 3;
 
 	for(int i = 0; i < domainSizeX_; i++)
 		domain_.push_back(vector<SimCell>(domainSizeY_));
 
 
 	// Set air source position / listening position
-	sourceX_ = (int)round(sourceX / SIM_CELL_SIZE);
-	sourceY_ = (int)round(sourceY / SIM_CELL_SIZE);
-	listeningX_ = (int)round(listeningX / SIM_CELL_SIZE);
-	listeningY_ = (int)round(listeningY / SIM_CELL_SIZE);
+	sourceX_ = SIM_DIST_TO_PIPE + 1;
+	sourceY_ = domainSizeY_ - SIM_DIST_TO_PIPE - 2;
 
-	// Check location bounds
-	bool oob = false;
+	listeningX_ = domainSizeX_ / 2;
+	listeningY_ = SIM_PML_SIZE + (SIM_MARGIN_SIZE / 2);
 
-	if(sourceX_ < 0 || sourceX_ >= domainSizeX_){
-		error("Input X is out of bounds!");
-		oob = true;
+
+	// Create pipe geometry
+	for(int i = 0; i < pipeSizeX_; i++)
+		domain_[SIM_DIST_TO_PIPE + 1 + i][sourceY_ + 1].solid = true;
+
+	for(int i = 0; i < pipeSizeY_ + 3; i++){
+		domain_[SIM_DIST_TO_PIPE][SIM_DIST_TO_PIPE + i].solid = true;
+		domain_[domainSizeX_ - SIM_DIST_TO_PIPE - 1][SIM_DIST_TO_PIPE + i].solid = true;
 	}
 
-	if(sourceY_ < 0 || sourceY_ >= domainSizeY_){
-		error("Input Y is out of bounds!");
-		oob = true;
-	}
+	int mouthSize = max(1, (int)round(params_.mouthSize / SIM_CELL_SIZE));
 
-	if(listeningX_ < 0 || listeningX_ >= domainSizeX_){
-		error("Listening X is out of bounds!");
-		oob = true;
-	}
-
-	if(listeningY_ < 0 || listeningY_ >= domainSizeY_){
-		error("Listening Y is out of bounds!");
-		oob = true;
-	}
-
-	if(oob)
-		fatalError("Positions out of bounds!");
+	for(int i = 0; i < 1; i++)
+		domain_[SIM_DIST_TO_PIPE][sourceY_ - 1 - i].solid = false;
 
 
-	// Box test model
-	// TODO: remove this
-	int x1 = 10;
-	int x2 = 19;
-	int y1 = 10;
-	int y2 = 114;
-
-	// Box walls, open on top
-	for(int i = x1; i <= x2; i++){
-		//domain_[i][y1].solid = true;
-		domain_[i][y2 + 1].solid = true;
-	}
-	for(int i = y1; i <= y2; i++){
-		domain_[x1][i].solid = true;
-		domain_[x2][i].solid = true;
-	}
-	// Pipe foot
-	//domain_[x1 - 1][y2].solid = true;
-	//domain_[x1 - 1][y2 + 1].solid = true;
-	//domain_[x1][y2 + 1].solid = true;
-	//domain_[x1 + 1][y2 + 1].solid = true;
-
-	int mouthSize = max(1, (int)round(SIM_MOUTH_SIZE / SIM_CELL_SIZE));
-
-	for(int i = 0; i < mouthSize; i++)
-		domain_[x1][y2 - 1 - i].solid = false;
-
-	// TODO: remove this
-	for(int i = 0; i < 8; i++)
+	// Set excitation cells
+	for(int i = 0; i < pipeSizeX_; i++)
 		domain_[sourceX_ + i][sourceY_].excitation = true;
 
 
@@ -105,7 +71,11 @@ Solver::Solver(float sizeX, float sizeY, float sourceX, float sourceY, float lis
 	}
 
 	// Initialize source sample pressure history
-	sourceSampleHistory_ = vector<float>(1000);
+	sourceSampleHistory_ = vector<float>(1000, 0);
+
+	// Initialize uBore history
+	uBoreHistory_ = vector<float>(2, 0);
+	uBoreFilteredHistory_ = vector<float>(2, 0);
 }
 
 
@@ -144,20 +114,19 @@ void Solver::solveStep(){
 	// Get pressure at listening point to interpolate with later
 	float lp = domain_[listeningX_][listeningY_].pressure;
 
-
-	// Point source test
-	// TODO: remove this, replace with trigger + pressure regions
-	//float freq = 440;
-	//double v = 6.2831853 * freq * (stepNumber_ % (int)round((1 / freq) / SIM_TIME_DELTA)) * SIM_TIME_DELTA;
-	//domain_[sourceX_][sourceY_].pressure += (float)(sin(v) * 10000);
+	// TODO: remove this
+	// test factor
+	float f = (float)min(1.0, simTime / 10);
 
 
 	// Calculate current pipe pressure and resulting terms
-	float pressure = SIM_AIR_INPUT_PRESSURE;
-	float height = 3.25e-2;
+	float pm = (float)min(1.0, simTime / 0.02f);
+	float pressure = params_.maxPressure;
+	//float pressure = (float)max(0.0, min(1.0, (simTime - 0.5) / 0.01)) * SIM_AIR_INPUT_PRESSURE;
 
-	float flueAirVelocity = sqrtf(2 * pressure / SIM_AIR_RHO);
-	float tau = SIM_MOUTH_SIZE / (SIM_JET_SPEED_COEFFICIENT * flueAirVelocity);
+	float flueAirVelocity = sqrtf((2 * pressure) / SIM_AIR_RHO);
+	float tau = params_.mouthSize / (SIM_JET_SPEED_COEFFICIENT * flueAirVelocity);
+
 
 	// Resize sample point history vector
 	int newSize = max(1, min(1000, (int)round(tau / SIM_TIME_DELTA)));
@@ -165,25 +134,39 @@ void Solver::solveStep(){
 	if(sourceSampleHistory_.size() != newSize)
 		sourceSampleHistory_.resize(newSize, 0);
 
-	// Update sample point history
+
+	// Update sample cell history
 	for(int i = 0; i < sourceSampleHistory_.size() - 1; i++)
 		sourceSampleHistory_[i] = sourceSampleHistory_[i + 1];
 
-	// TODO: change point where pressure is read to a variable offset from input point
-	SimCell& sc = domain_[sourceX_ - 1][sourceY_ - 1];
+	// Store velocity from sample cell
+	SimCell& sc = domain_[sourceX_][sourceY_ - 1];
 	sourceSampleHistory_[sourceSampleHistory_.size() - 1] = -sc.velX;
 
 
-	// Calculate values for air input
-	float eta = ((sourceSampleHistory_[0]) / flueAirVelocity) * SIM_FLUE_WIDTH;
-	float uBore = ((flueAirVelocity * height) / SIM_CELL_SIZE) * tanhf(eta - SIM_LABIUM_OFFSET);
+	// Calculate uBore for excitation
+	float noise = ((rand() % 1000) / 1000.0f) * 0.25f;
+	float eta = flueAirVelocity == 0 ? 0 : ((sourceSampleHistory_[0] + noise) / flueAirVelocity) * params_.flueWidth;
+	float uBore = -(flueAirVelocity / SIM_CELL_SIZE) * tanhf((eta - params_.labiumOffset));
+
+
+	// Apply low pass filter
+	float uBoreFiltered = (0.813244f * (uBore + (2 * uBoreHistory_[1]) + uBoreHistory_[0])) +
+		(-1.591300f * uBoreFilteredHistory_[1]) + (-0.661674f * uBoreFilteredHistory_[0]);
+
+	// Update uBore history
+	uBoreHistory_[0] = uBoreHistory_[1];
+	uBoreFilteredHistory_[0] = uBoreFilteredHistory_[1];
+	uBoreHistory_[1] = uBore;
+	uBoreFilteredHistory_[1] = uBoreFiltered;
 
 	// Apply excitation
-	if(isfinite(uBore))
-		for(int i = 0; i < 8; i++)
-			domain_[sourceX_ + i][sourceY_].velY = uBore / (SIM_CELL_SIZE * height * 8);
+	if(isfinite(uBoreFiltered) && uBoreFiltered > 0)
+		for(int i = 0; i < pipeSizeX_; i++)
+			domain_[sourceX_ + i][sourceY_].velY = -uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
 
 
+	// Update domain
 	for(int i = 0; i < domainSizeX_ - 1; i++){
 		for(int j = 0; j < domainSizeY_ - 1; j++){
 
@@ -237,34 +220,42 @@ void Solver::solveStep(){
 }
 
 
+int Solver::getPipeSizeX() const{
+	return pipeSizeX_;
+}
+
 const SimCell& Solver::getCell(int x, int y){
 	return domain_[x][y];
 }
 
-int Solver::getDomainSizeX(){
+int Solver::getDomainSizeX() const{
 	return domainSizeX_;
 }
 
-int Solver::getDomainSizeY(){
+int Solver::getDomainSizeY() const{
 	return domainSizeY_;
 }
 
-int Solver::getSourceX(){
+int Solver::getSourceX() const{
 	return sourceX_;
 }
 
-int Solver::getSourceY(){
+int Solver::getSourceY() const{
 	return sourceY_;
 }
 
-int Solver::getListeningX(){
+int Solver::getListeningX() const{
 	return listeningX_;
 }
 
-int Solver::getListeningY(){
+int Solver::getListeningY() const{
 	return listeningY_;
 }
 
-const vector<float>& Solver::getOutput(){
+float Solver::getUBore() const{
+	return uBoreFilteredHistory_[1];
+}
+
+const vector<float>& Solver::getOutput() const{
 	return output_;
 }

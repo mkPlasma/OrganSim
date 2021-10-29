@@ -11,42 +11,39 @@
 
 #include<vector>
 #include<string>
+#include<Perlin.h>
 
 using std::vector;
 using std::string;
 
 
-// Time step / Cell size
-#define SIM_TIME_DELTA 7.81e-6f
+// Speed of sound waves (m/s)
+#define SIM_SPEED_OF_SOUND 346.13f
+
+// Cell size / Time step
 #define SIM_CELL_SIZE 3.83e-3f
+#define SIM_TIME_DELTA (SIM_CELL_SIZE / (1.4142f * SIM_SPEED_OF_SOUND))
 
 // Audio sample rate
 #define SAMPLE_RATE 44100
 #define SAMPLE_TIME_DELTA ((1.0 / SAMPLE_RATE) / SIM_TIME_DELTA)
 
-// Rho - Density (kg / m^3)
-// Kappa - Bulk modulus (Pa)
-#define SIM_AIR_RHO 1.1860f
-#define SIM_AIR_KAPPA 1.42e5f
+// Air density (kg/m^3)
+#define SIM_AIR_RHO 1.1839f
 
 // Wave propogation speed correction term
-#define SIM_SPEED_OF_SOUND 3.43e2f
 #define SIM_CORRECTION_TERM (SIM_SPEED_OF_SOUND / (SIM_CELL_SIZE / SIM_TIME_DELTA))
 
 // Precomputed terms for update
-#define SIM_P_TERM	((SIM_CORRECTION_TERM * SIM_AIR_KAPPA * SIM_TIME_DELTA) / SIM_CELL_SIZE)
-#define SIM_V_TERM	((SIM_CORRECTION_TERM * SIM_TIME_DELTA / SIM_CELL_SIZE) / SIM_AIR_RHO)
+#define SIM_P_TERM	((SIM_CORRECTION_TERM * SIM_SPEED_OF_SOUND * SIM_SPEED_OF_SOUND * SIM_AIR_RHO * SIM_TIME_DELTA) / SIM_CELL_SIZE)
+#define SIM_V_TERM	((SIM_CORRECTION_TERM * (SIM_TIME_DELTA / SIM_CELL_SIZE)) / SIM_AIR_RHO)
 
-// Air input parameters for 440 Hz pipe
-// TODO: make these variables and optimize for each pipe
-#define SIM_AIR_INPUT_PRESSURE 690
-#define SIM_FLUE_WIDTH 3.25e-4f
-#define SIM_MOUTH_SIZE 8e-3f
-#define SIM_LABIUM_OFFSET 1e-5f
 #define SIM_JET_SPEED_COEFFICIENT 0.4f
 
-// PML size in cells
+// PML and additional margin size in cells
 #define SIM_PML_SIZE 6
+#define SIM_MARGIN_SIZE 4
+#define SIM_DIST_TO_PIPE (SIM_PML_SIZE + SIM_MARGIN_SIZE)
 
 
 // Single simulation cell containing air pressure and wave velocity
@@ -62,8 +59,25 @@ struct SimCell{
 	SimCell() : solid(false), excitation(false), sigma(0), pressure(0), velX(0), velY(0){}
 };
 
+// Geometry parameters for solver instance
+struct PipeParameters{
+	float pipeWidth;
+	float pipeLength;
+
+	float maxPressure;
+	float flueWidth;
+	float mouthSize;
+	float labiumOffset;
+	float widthParam;
+};
+
 
 class Solver{
+
+	PipeParameters params_;
+
+	int pipeSizeX_;
+	int pipeSizeY_;
 
 	vector<vector<SimCell>> domain_;
 	int domainSizeX_;
@@ -75,13 +89,17 @@ class Solver{
 	int listeningY_;
 
 	vector<float> sourceSampleHistory_;
+	vector<float> uBoreHistory_;
+	vector<float> uBoreFilteredHistory_;
+
+	Perlin noise_;
 
 	int stepNumber_;
 	double nextSampleStep_;
 	vector<float> output_;
 
 public:
-	Solver(float sizeX, float sizeY, float sourceX, float sourceY, float listeningX, float listeningY);
+	Solver(PipeParameters parameters);
 
 	// Run simulation for given number of seconds
 	void solveSeconds(float seconds);
@@ -93,16 +111,20 @@ public:
 	void solveStep();
 
 
+	int getPipeSizeX() const;
+
 	const SimCell& getCell(int x, int y);
 
-	int getDomainSizeX();
-	int getDomainSizeY();
+	int getDomainSizeX() const;
+	int getDomainSizeY() const;
 
-	int getSourceX();
-	int getSourceY();
+	int getSourceX() const;
+	int getSourceY() const;
 
-	int getListeningX();
-	int getListeningY();
+	int getListeningX() const;
+	int getListeningY() const;
 
-	const vector<float>& getOutput();
+	float getUBore() const;
+
+	const vector<float>& getOutput() const;
 };
