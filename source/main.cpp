@@ -3,6 +3,8 @@
 #include"solver.h"
 #include"window.h"
 #include"midiData.h"
+#include"json.hpp"
+#include "../PipeManager.h"
 
 using std::cout;
 using std::endl;
@@ -10,6 +12,7 @@ using std::endl;
 
 //#define DEBUG_VIS
 //#define DEBUG_MIDI
+//#define DEBUG_JSON
 
 
 int main(){
@@ -31,6 +34,14 @@ int main(){
 	system("pause");
 	return 0;
 #endif
+#ifdef DEBUG_JSON
+	cout << "Printing JSON data..." << endl;
+	PipeManager manager("E:/Desktop/models.json");
+	PipeParameters i = manager.getPipes().at(0);
+	cout << i.pipeLength << endl;
+	cout << "JSON data complete." << endl;
+	return 0;
+#endif
 
 	cout << "Starting simulation!" << endl;
 
@@ -38,15 +49,9 @@ int main(){
 	float secondsToSolve = 2;
 
 	// Test pipe
-	// TODO: remove this, load this data from file
-	PipeParameters params;
-	params.pipeWidth = 1.16e-2f;
-	params.pipeLength = 36e-2f;
-
-	params.maxPressure = 2000;
-	params.flueWidth = 0.0552e-3f;
-	params.mouthSize = 12e-3f;
-	params.labiumOffset = 0.1e-3f;
+	PipeManager manager("E:/Desktop/models.json");
+	PipeParameters params = manager.getPipes().at(0);
+	
 
 	Solver solver(params);
 

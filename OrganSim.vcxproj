@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\json\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;$(SolutionDir)deps\json\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -159,6 +159,7 @@
     <ClCompile Include="deps\MidiFile\src\MidiFile.cpp" />
     <ClCompile Include="deps\MidiFile\src\MidiMessage.cpp" />
     <ClCompile Include="deps\MidiFile\src\Options.cpp" />
+    <ClCompile Include="PipeManager.cpp" />
     <ClCompile Include="source\error.cpp" />
     <ClCompile Include="source\main.cpp" />
     <ClCompile Include="source\MidiData.cpp" />
@@ -168,6 +169,7 @@
     <ClCompile Include="source\windowRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PipeManager.h" />
     <ClInclude Include="source\MidiData.h" />
     <ClInclude Include="source\error.h" />
     <ClInclude Include="source\shaderProgram.h" />

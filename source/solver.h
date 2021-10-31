@@ -12,6 +12,7 @@
 #include<vector>
 #include<string>
 #include<Perlin.h>
+#include "../PipeManager.h"
 
 using std::vector;
 using std::string;
@@ -60,16 +61,16 @@ struct SimCell{
 };
 
 // Geometry parameters for solver instance
-struct PipeParameters{
-	float pipeWidth;
-	float pipeLength;
-
-	float maxPressure;
-	float flueWidth;
-	float mouthSize;
-	float labiumOffset;
-	float widthParam;
-};
+// struct PipeParameters{
+// 	float pipeWidth;
+// 	float pipeLength;
+//
+// 	float maxPressure;
+// 	float flueWidth;
+// 	float mouthSize;
+// 	float labiumOffset;
+// 	float widthParam;
+// };
 
 
 class Solver{
