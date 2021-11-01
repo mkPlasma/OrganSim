@@ -1,17 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "pipeParameters.h"
 
-struct PipeParameters {
-	float pipeWidth;
-	float pipeLength;
-
-	float maxPressure;
-	float flueWidth;
-	float mouthSize;
-	float labiumOffset;
-	float widthParam;
-};
 
 class PipeManager
 {

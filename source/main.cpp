@@ -4,7 +4,7 @@
 #include"window.h"
 #include"midiData.h"
 #include"json.hpp"
-#include "../PipeManager.h"
+#include"PipeManager.h"
 
 using std::cout;
 using std::endl;
@@ -34,12 +34,15 @@ int main(){
 	system("pause");
 	return 0;
 #endif
+
+	PipeManager manager("res/pipes.json");
+
 #ifdef DEBUG_JSON
 	cout << "Printing JSON data..." << endl;
-	PipeManager manager("E:/Desktop/models.json");
 	PipeParameters i = manager.getPipes().at(0);
 	cout << i.pipeLength << endl;
 	cout << "JSON data complete." << endl;
+	system("pause");
 	return 0;
 #endif
 
@@ -49,7 +52,6 @@ int main(){
 	float secondsToSolve = 2;
 
 	// Test pipe
-	PipeManager manager("E:/Desktop/models.json");
 	PipeParameters params = manager.getPipes().at(0);
 	
 

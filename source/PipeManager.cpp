@@ -22,7 +22,6 @@ PipeManager::PipeManager(const std::string filePath)
 		pipe.flueWidth = obj["flueWidth"];
 		pipe.mouthSize = obj["mouthSize"];
 		pipe.labiumOffset = obj["labiumOffset"];
-		pipe.widthParam = obj["widthParam"];
 
 		this->pipes.push_back(pipe);
 	}

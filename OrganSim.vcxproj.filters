@@ -60,7 +60,7 @@
     <ClCompile Include="source\MidiData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PipeManager.cpp">
+    <ClCompile Include="source\PipeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +80,10 @@
     <ClInclude Include="source\MidiData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PipeManager.h">
+    <ClInclude Include="source\PipeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\pipeParameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
