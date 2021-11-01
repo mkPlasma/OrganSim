@@ -22,7 +22,7 @@ using std::string;
 #define SIM_SPEED_OF_SOUND 346.13f
 
 // Cell size / Time step
-#define SIM_CELL_SIZE 3.83e-3f
+#define SIM_CELL_SIZE 3.8e-3f
 #define SIM_TIME_DELTA (SIM_CELL_SIZE / (1.4142f * SIM_SPEED_OF_SOUND))
 
 // Audio sample rate

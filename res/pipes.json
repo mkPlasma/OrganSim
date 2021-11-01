@@ -1,10 +1,10 @@
 {
 	"A4":{
-		"pipeWidth": 1.16e-2,
-		"pipeLength": 36e-2,
+		"pipeWidth": 3.25e-2,
+		"pipeLength": 46e-2,
 		
 		"maxPressure":	2000,
-		"flueWidth":	0.0552e-3,
+		"flueWidth":	0.2e-3,
 		"mouthSize":	12e-3,
 		"labiumOffset":	0.1e-3
 	}

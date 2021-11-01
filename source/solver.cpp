@@ -65,8 +65,8 @@ Solver::Solver(PipeParameters params) : params_(params), stepNumber_(0), nextSam
 			float pmlSigma = dist > SIM_PML_SIZE ? 0 : (1 - ((float)dist / SIM_PML_SIZE)) * sigma;
 
 			// Calclate sigma term
-			int beta = domain_[i][j].solid || domain_[i][j].excitation ? 0 : 1;
-			domain_[i][j].sigma = 1 / (1 + (1 - beta + pmlSigma));
+			int beta = domain_[i][j].solid || domain_[i][j].excitation ? 1 : 0;
+			domain_[i][j].sigma = 1 / (1 + beta + pmlSigma);
 		}
 	}
 
@@ -122,10 +122,9 @@ void Solver::solveStep(){
 	// Calculate current pipe pressure and resulting terms
 	float pm = (float)min(1.0, simTime / 0.02f);
 	float pressure = params_.maxPressure;
-	//float pressure = (float)max(0.0, min(1.0, (simTime - 0.5) / 0.01)) * SIM_AIR_INPUT_PRESSURE;
 
-	float flueAirVelocity = sqrtf((2 * pressure) / SIM_AIR_RHO);
-	float tau = params_.mouthSize / (SIM_JET_SPEED_COEFFICIENT * flueAirVelocity);
+	float airVelocity = sqrtf((2 * pressure) / SIM_AIR_RHO);
+	float tau = params_.mouthSize / (SIM_JET_SPEED_COEFFICIENT * airVelocity);
 
 
 	// Resize sample point history vector
@@ -146,8 +145,8 @@ void Solver::solveStep(){
 
 	// Calculate uBore for excitation
 	float noise = ((rand() % 1000) / 1000.0f) * 0.25f;
-	float eta = flueAirVelocity == 0 ? 0 : ((sourceSampleHistory_[0] + noise) / flueAirVelocity) * params_.flueWidth;
-	float uBore = -(flueAirVelocity / SIM_CELL_SIZE) * tanhf((eta - params_.labiumOffset));
+	float eta = airVelocity == 0 ? 0 : ((sourceSampleHistory_[0] + noise) / airVelocity) * params_.flueWidth;
+	float uBore = ((SIM_CORRECTION_TERM * airVelocity) / SIM_CELL_SIZE) * tanhf(eta - params_.labiumOffset);
 
 
 	// Apply low pass filter
@@ -161,9 +160,9 @@ void Solver::solveStep(){
 	uBoreFilteredHistory_[1] = uBoreFiltered;
 
 	// Apply excitation
-	if(isfinite(uBoreFiltered) && uBoreFiltered > 0)
+	if(isfinite(uBoreFiltered) && uBoreFiltered < 0)
 		for(int i = 0; i < pipeSizeX_; i++)
-			domain_[sourceX_ + i][sourceY_].velY = -uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
+			domain_[sourceX_ + i][sourceY_].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
 
 
 	// Update domain
