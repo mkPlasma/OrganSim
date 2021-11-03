@@ -11,7 +11,8 @@ using organSim::fatalError;
 using organSim::error;
 
 
-Solver::Solver(PipeParameters params) : params_(params), stepNumber_(0), nextSampleStep_(0) {
+Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
+	params_(params), notes_(notes), noteIndex_(0), finished_(false), sleep_(true), stepNumber_(0), nextSampleStep_(0) {
 
 	// Get pipe size in cells
 	pipeSizeX_ = (int)round(params_.pipeWidth / SIM_CELL_SIZE);
@@ -78,6 +79,11 @@ Solver::Solver(PipeParameters params) : params_(params), stepNumber_(0), nextSam
 	uBoreFilteredHistory_ = vector<float>(2, 0);
 }
 
+// Run simulation until all notes have been played
+void Solver::solve(){
+	while(!finished_)
+		solveStep();
+}
 
 // Run simulation for given number of seconds
 void Solver::solveSeconds(float seconds){
@@ -95,18 +101,18 @@ void Solver::solveSeconds(float seconds){
 			lastProgressPrint = progress;
 		}
 
-		solveStep();
+		solveStep(false);
 	}
 }
 
 // Run simulation for given number of steps
 void Solver::solveSteps(int steps){
 	for(int i = 0; i < steps; i++)
-		solveStep();
+		solveStep(false);
 }
 
 // Run single simulation step
-void Solver::solveStep(){
+void Solver::solveStep(bool useNoteData){
 
 	// Simulation time in seconds
 	double simTime = stepNumber_ * SIM_TIME_DELTA;
@@ -114,13 +120,71 @@ void Solver::solveStep(){
 	// Get pressure at listening point to interpolate with later
 	float lp = domain_[listeningX_][listeningY_].pressure;
 
-	// TODO: remove this
-	// test factor
-	float f = (float)min(1.0, simTime / 10);
 
+	float noteVolume = 1;
+
+	if(useNoteData){
+		// Get current / next note
+		const Note& note = notes_[noteIndex_];
+
+		// Increment note
+		double t = simTime - note.endTimeSeconds;
+
+		if(t > 0 && t <= SIM_TIME_DELTA){
+			noteIndex_++;
+			printf("  %d / %d\n", noteIndex_, (int)notes_.size());
+		}
+
+
+		// Calculate note volume and go to / wake from sleep
+		// Note release, go to sleep
+		if(noteIndex_ > 0 && simTime > notes_[noteIndex_ - 1].endTimeSeconds){
+			noteVolume = 1 - (float)min(1.0, (simTime - notes_[noteIndex_ - 1].endTimeSeconds) / NOTE_RELEASE_TIME);
+
+			// Go to sleep if enough time has passed after the last note
+			if(simTime - notes_[noteIndex_ - 1].endTimeSeconds >= NOTE_RELEASE_TIME + SLEEP_DELAY_TIME){
+				sleep_ = true;
+
+				// If this was the final note, finish the simulation
+				if(noteIndex_ == notes_.size())
+					finished_ = true;
+			}
+		}
+
+		// Note attack, wake from sleep
+		if(noteIndex_ < notes_.size() && simTime > note.startTimeSeconds){
+			noteVolume = (float)min(1.0, (simTime - note.startTimeSeconds) / NOTE_ATTACK_TIME);
+			sleep_ = false;
+		}
+	}
+	else
+		sleep_ = false;
+
+	// Do update
+	if(!sleep_){
+		updateExcitation(noteVolume);
+		updateCells();
+	}
+
+
+	// Add pressure value to output based on sample rate
+	if(stepNumber_ >= nextSampleStep_){
+
+		// Updated pressure
+		float lpNew = domain_[listeningX_][listeningY_].pressure;
+
+		// Push ouput value, interpolated between old and updated pressure
+		output_.push_back((float)(lp + ((lpNew - lp) * (nextSampleStep_ - (int)nextSampleStep_))));
+
+		nextSampleStep_ += SAMPLE_TIME_DELTA;
+	}
+
+	stepNumber_++;
+}
+
+void Solver::updateExcitation(float noteVolume){
 
 	// Calculate current pipe pressure and resulting terms
-	float pm = (float)min(1.0, simTime / 0.02f);
 	float pressure = params_.maxPressure;
 
 	float airVelocity = sqrtf((2 * pressure) / SIM_AIR_RHO);
@@ -146,7 +210,7 @@ void Solver::solveStep(){
 	// Calculate uBore for excitation
 	float noise = ((rand() % 1000) / 1000.0f) * 0.25f;
 	float eta = airVelocity == 0 ? 0 : ((sourceSampleHistory_[0] + noise) / airVelocity) * params_.flueWidth;
-	float uBore = ((SIM_CORRECTION_TERM * airVelocity) / SIM_CELL_SIZE) * tanhf(eta - params_.labiumOffset);
+	float uBore = noteVolume * ((SIM_CORRECTION_TERM * airVelocity) / SIM_CELL_SIZE) * tanhf(eta - params_.labiumOffset);
 
 
 	// Apply low pass filter
@@ -163,9 +227,10 @@ void Solver::solveStep(){
 	if(isfinite(uBoreFiltered) && uBoreFiltered < 0)
 		for(int i = 0; i < pipeSizeX_; i++)
 			domain_[sourceX_ + i][sourceY_].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
+}
 
+void Solver::updateCells(){
 
-	// Update domain
 	for(int i = 0; i < domainSizeX_ - 1; i++){
 		for(int j = 0; j < domainSizeY_ - 1; j++){
 
@@ -202,20 +267,6 @@ void Solver::solveStep(){
 			}
 		}
 	}
-
-	// Add pressure value to output based on sample rate
-	if(stepNumber_ >= nextSampleStep_){
-
-		// Updated pressure
-		float lpNew = domain_[listeningX_][listeningY_].pressure;
-
-		// Push ouput value, interpolated between old and updated pressure
-		output_.push_back((float)(lp + ((lpNew - lp) * (nextSampleStep_ - (int)nextSampleStep_))));
-
-		nextSampleStep_ += SAMPLE_TIME_DELTA;
-	}
-
-	stepNumber_++;
 }
 
 

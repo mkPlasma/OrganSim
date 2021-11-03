@@ -13,6 +13,7 @@
 #include<string>
 #include<Perlin.h>
 #include"pipeParameters.h"
+#include"midiData.h"
 
 using std::vector;
 using std::string;
@@ -46,6 +47,13 @@ using std::string;
 #define SIM_MARGIN_SIZE 4
 #define SIM_DIST_TO_PIPE (SIM_PML_SIZE + SIM_MARGIN_SIZE)
 
+// Note attack / release time
+#define NOTE_ATTACK_TIME	0.001f
+#define NOTE_RELEASE_TIME	0.1f
+
+// Delay after note release to begin sleep
+#define SLEEP_DELAY_TIME 0.25f
+
 
 // Single simulation cell containing air pressure and wave velocity
 struct SimCell{
@@ -63,7 +71,16 @@ struct SimCell{
 
 class Solver{
 
-	PipeParameters params_;
+	const PipeParameters& params_;
+	const vector<Note>& notes_;
+	int noteIndex_;
+
+	bool finished_;
+	bool sleep_;
+
+	int stepNumber_;
+	double nextSampleStep_;
+	vector<float> output_;
 
 	int pipeSizeX_;
 	int pipeSizeY_;
@@ -83,12 +100,11 @@ class Solver{
 
 	Perlin noise_;
 
-	int stepNumber_;
-	double nextSampleStep_;
-	vector<float> output_;
-
 public:
-	Solver(PipeParameters parameters);
+	Solver(const PipeParameters& parameters, const vector<Note>& notes);
+
+	// Run simulation until all notes have been played
+	void solve();
 
 	// Run simulation for given number of seconds
 	void solveSeconds(float seconds);
@@ -97,7 +113,10 @@ public:
 	void solveSteps(int steps);
 
 	// Run single simulation step
-	void solveStep();
+	void solveStep(bool useNoteData = true);
+
+	void updateExcitation(float noteVolume);
+	void updateCells();
 
 
 	int getPipeSizeX() const;
