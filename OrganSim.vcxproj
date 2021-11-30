@@ -152,7 +152,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="deps\glad\src\glad.c" />
-    <ClCompile Include="deps\PerlinNoiseCpp\src\Perlin.cpp" />
     <ClCompile Include="deps\MidiFile\src\Binasc.cpp" />
     <ClCompile Include="deps\MidiFile\src\MidiEvent.cpp" />
     <ClCompile Include="deps\MidiFile\src\MidiEventList.cpp" />

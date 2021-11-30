@@ -73,6 +73,8 @@ struct SimCell{
 
 class Solver{
 
+	GLFWwindow* window_;
+
 	const PipeParameters& params_;
 	const vector<Note>& notes_;
 	int noteIndex_;
@@ -107,6 +109,7 @@ class Solver{
 
 public:
 	Solver(const PipeParameters& parameters, const vector<Note>& notes);
+	~Solver();
 
 	// Run simulation until all notes have been played
 	void solve();

@@ -108,9 +108,10 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	if (!glfwInit())
 		std::cout << "Error initializing glfw." << std::endl;
 
-	GLFWwindow* window_ = glfwCreateWindow(100, 100, "OrganSim", NULL, NULL);
+	window_ = glfwCreateWindow(100, 100, "OrganSim", NULL, NULL);
 
 	glfwMakeContextCurrent(window_);
+	glfwHideWindow(window_);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize OpenGL context" << std::endl;
@@ -127,7 +128,7 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 		organSim::fatalError("Failed to create shader object");
 
 	// Read in the glsl source code
-	std::ifstream fileStream("C:/Users/Elijah/source/repos/OrganSimGPU/res/shaders/updatecells.comp"); // TODO don't use absolute path
+	std::ifstream fileStream("res/shaders/updatecells.comp"); // TODO don't use absolute path
 
 	if (fileStream.fail())
 		organSim::fatalError("Failed to open shader file: updatecells.comp");
@@ -176,6 +177,11 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	glDeleteShader(shaderID);
 
 	glUseProgram(programID);
+}
+
+Solver::~Solver(){
+	glfwDestroyWindow(window_);
+	glfwTerminate();
 }
 
 // Run simulation until all notes have been played
