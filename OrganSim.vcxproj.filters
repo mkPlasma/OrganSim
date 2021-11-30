@@ -36,9 +36,6 @@
     <ClCompile Include="source\windowRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="deps\PerlinNoiseCpp\src\Perlin.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="deps\MidiFile\src\Binasc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
