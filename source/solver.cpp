@@ -228,7 +228,7 @@ void Solver::solveStep(bool useNoteData){
 		// Increment note
 		double t = simTime - note.endTimeSeconds;
 
-		if(t > 0 && t <= SIM_TIME_DELTA){
+		if(t >= 0 && t <= SIM_TIME_DELTA){
 			noteIndex_++;
 			printf("  %d / %d\n", noteIndex_, (int)notes_.size());
 		}
@@ -324,10 +324,12 @@ void Solver::updateExcitation(float noteVolume){
 	uBoreFilteredHistory_[1] = uBoreFiltered;
 
 	// Apply excitation
-	if(isfinite(uBoreFiltered) && uBoreFiltered < 0)
-		for(int i = 0; i < pipeSizeX_; i++)
+	for(int i = 0; i < pipeSizeX_; i++){
+		if(isfinite(uBoreFiltered) && uBoreFiltered < 0)
 			domain_[get1DIndex(sourceX_ + i, sourceY_)].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
-			//domain_[sourceX_ + i][sourceY_].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
+		else
+			domain_[get1DIndex(sourceX_ + i, sourceY_)].velY = 0;
+	}
 }
 
 void Solver::updateCells(){

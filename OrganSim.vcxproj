@@ -139,7 +139,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\PerlinNoiseCpp\include;$(SolutionDir)deps\json\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\glfw-3.3\include;$(SolutionDir)deps\glad\include;$(SolutionDir)deps\AudioFile\include;$(SolutionDir)deps\json\include;$(SolutionDir)deps\MidiFile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

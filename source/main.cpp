@@ -21,10 +21,11 @@ using std::endl;
 using std::max;
 
 
-#define GEOMETRY_FILE	"E:/Desktop/pipes.json" // todo change back to relative paths. My VS doesn't like relative paths for some reason.
-#define MIDI_FILE		"E:/Desktop/MIDI_sample.mid"
-#define OUTPUT_FILE		"E:/Desktop/out"
-#define DEBUG_PIPE		"D4"
+#define GEOMETRY_FILE	"res/pipes.json"
+#define MIDI_FILE		"res/test5.mid"
+#define OUTPUT_FILE		"out"
+#define DEBUG_PIPE		"F#5"
+#define DEBUG_TIME		1
 
 //#define DEBUG_VIS
 //#define DEBUG_SINGLE_PIPE
@@ -239,7 +240,7 @@ int main(){
 	// Start timer. This is the important part which we are accelerating.
 	auto start = std::chrono::steady_clock::now();
 
-	solver.solveSeconds(1);
+	solver.solveSeconds(DEBUG_TIME);
 
 	// Stop timer.
 	auto end = std::chrono::steady_clock::now();
@@ -253,11 +254,16 @@ int main(){
 
 	vector<vector<float>> outputVec;
 
+	// Check each pipe is present
+	for(auto& i : notes)
+		if(manager.getPipes().find(i.first) == manager.getPipes().end())
+			cout << "Missing note " << i.first << endl;
+
 	int index = 1;
 
 	// Create solver for each pipe
 	for(auto& i : notes){
-		cout << "Progress: " << index++ << " / " << notes.size() << endl;
+		cout << "Progress: " << index++ << " / " << notes.size() << "  Note " << i.first << endl;
 
 		Solver solver(manager.getPipes()[i.first], i.second);
 		solver.solve();

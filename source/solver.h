@@ -11,7 +11,6 @@
 
 #include<vector>
 #include<string>
-#include<Perlin.h>
 #include"pipeParameters.h"
 #include"midiData.h"
 
@@ -51,11 +50,11 @@ using std::string;
 #define SIM_DIST_TO_PIPE (SIM_PML_SIZE + SIM_MARGIN_SIZE)
 
 // Note attack / release time
-#define NOTE_ATTACK_TIME	0.001f
+#define NOTE_ATTACK_TIME	0.00125f
 #define NOTE_RELEASE_TIME	0.1f
 
 // Delay after note release to begin sleep
-#define SLEEP_DELAY_TIME 0.25f
+#define SLEEP_DELAY_TIME 0.11f
 
 
 // Single simulation cell containing air pressure and wave velocity
@@ -100,8 +99,6 @@ class Solver{
 	vector<float> sourceSampleHistory_;
 	vector<float> uBoreHistory_;
 	vector<float> uBoreFilteredHistory_;
-
-	Perlin noise_;
 
 	// void createShader();
 	// GLuint compileShader();
