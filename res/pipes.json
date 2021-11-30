@@ -19,7 +19,7 @@
 		"labiumOffset":	0.1e-3
 	},
 	
-	"F#4":{
+	"FS4":{
 		"pipeWidth": 4.04e-2,
 		"pipeLength": 55.5e-2,
 		
@@ -49,7 +49,7 @@
 		"labiumOffset":	0.1e-3
 	},
 	
-	"A#4":{
+	"AS4":{
 		"pipeWidth": 3.25e-2,
 		"pipeLength": 44e-2,
 		

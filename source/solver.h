@@ -15,6 +15,9 @@
 #include"pipeParameters.h"
 #include"midiData.h"
 
+#include<glad/glad.h>
+#include<GLFW/glfw3.h>
+
 using std::vector;
 using std::string;
 
@@ -85,7 +88,7 @@ class Solver{
 	int pipeSizeX_;
 	int pipeSizeY_;
 
-	vector<vector<SimCell>> domain_;
+	vector<SimCell> domain_;
 	int domainSizeX_;
 	int domainSizeY_;
 
@@ -99,6 +102,11 @@ class Solver{
 	vector<float> uBoreFilteredHistory_;
 
 	Perlin noise_;
+
+	// void createShader();
+	// GLuint compileShader();
+
+	GLuint programID;
 
 public:
 	Solver(const PipeParameters& parameters, const vector<Note>& notes);
@@ -135,4 +143,7 @@ public:
 	float getUBore() const;
 
 	const vector<float>& getOutput() const;
+
+	SimCell* getSimCell(int x, int y);
+	int get1DIndex(int x, int y);
 };

@@ -1,0 +1,65 @@
+#version 430 core
+
+struct SimCell
+{
+	bool solid;
+	bool excitation;
+	float sigma;
+
+	float pressure;
+	float velX;
+	float velY;
+};
+
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer domain
+{
+	SimCell cellDomain[];
+};
+
+void main() 
+{
+	uint idx = gl_GlobalInvocationID.x;
+	uint idy = gl_GlobalInvocationID.y;
+	uint idtotal = gl_GlobalInvocationID.y * (gl_WorkGroupSize.x * gl_NumWorkGroups.x) + gl_GlobalInvocationID.x;
+
+	// Indices for transcoding the solver function
+	// c = cellDomain[idtotal]
+	// cx = cellDomain[idtotal + 1]
+	// cy = cellDomain[idtotal + (gl_WorkGroupSize.x * glNumWorkGroups)];
+	// cellDomain[i + 1][j - 1] = cellDomain[idtotal - (gl_WorkGroupSize.x * glNumWorkGroups) + 1]
+
+	uint c = idtotal;
+	uint cx = idtotal + 1;
+	uint cy = idtotal + (gl_WorkGroupSize.x * gl_NumWorkGroups.x);
+	uint derivC = idtotal - (gl_WorkGroupSize.x * gl_NumWorkGroups.x) + 1;
+
+	// Update pressure
+	if(idy > 0) {
+		float deriv = cellDomain[cx].velX + cellDomain[cx].velY - (cellDomain[c].velX + cellDomain[derivC].velY);
+		cellDomain[cx].pressure = (cellDomain[cx].pressure - (204.896f * deriv)) * cellDomain[cx].sigma;
+	}
+
+	// X velocity standard update
+	if(!cellDomain[c].excitation && !cellDomain[c].solid && !cellDomain[cx].solid){
+		cellDomain[c].velX = (cellDomain[c].velX - (0.00122018f * (cellDomain[cx].pressure - cellDomain[c].pressure))) * cellDomain[c].sigma;
+	} else {
+		if(!cellDomain[c].solid && cellDomain[cx].solid) {
+			cellDomain[c].velX = -abs(cellDomain[c].velX);
+		} else if(cellDomain[c].solid && !cellDomain[cx].solid) {
+			cellDomain[c].velX = abs(cellDomain[c].velX);
+		}
+	}
+
+	// Y velocity standard update
+	if(!cellDomain[c].excitation && !cellDomain[c].solid && !cellDomain[cy].solid) {
+		cellDomain[c].velY = (cellDomain[c].velY - (0.00122018f * (cellDomain[cy].pressure - cellDomain[c].pressure))) * cellDomain[c].sigma;
+	} else {
+		if(!cellDomain[c].solid && cellDomain[cy].solid) {
+			cellDomain[c].velY = -abs(cellDomain[c].velY);
+		} else if(cellDomain[c].solid && !cellDomain[cy].solid) {
+			cellDomain[c].velY = abs(cellDomain[c].velY);
+		}
+	}
+}

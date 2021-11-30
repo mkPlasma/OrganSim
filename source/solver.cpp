@@ -2,14 +2,22 @@
 
 #include<stdlib.h>
 #include<math.h>
+#include<chrono>
+#include<iostream>
+#include<fstream>
 #include<algorithm>
+#include<string>
 #include"error.h"
+
+#include<glad/glad.h>
+#include<GLFW/glfw3.h>
 
 using std::min;
 using std::max;
 using organSim::fatalError;
 using organSim::error;
 
+#define ACCELERATION_ENABLED
 
 Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	params_(params), notes_(notes), noteIndex_(0), finished_(false), sleep_(true), stepNumber_(0), nextSampleStep_(0) {
@@ -22,9 +30,12 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	domainSizeX_ = pipeSizeX_ + (2 * SIM_DIST_TO_PIPE) + 2;
 	domainSizeY_ = pipeSizeY_ + (2 * SIM_DIST_TO_PIPE) + 3;
 
-	for(int i = 0; i < domainSizeX_; i++)
-		domain_.push_back(vector<SimCell>(domainSizeY_));
+	// for(int i = 0; i < domainSizeX_; i++)
+	// 	domain_.push_back(vector<SimCell>(domainSizeY_));
 
+	for (int i = 0; i < domainSizeX_; i++)
+		for (int j = 0; j < domainSizeY_; j++)
+			domain_.push_back(SimCell());
 
 	// Set air source position / listening position
 	sourceX_ = SIM_DIST_TO_PIPE + 1;
@@ -35,23 +46,28 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 
 
 	// Create pipe geometry
-	for(int i = 0; i < pipeSizeX_; i++)
-		domain_[SIM_DIST_TO_PIPE + 1 + i][sourceY_ + 1].solid = true;
+	for (int i = 0; i < pipeSizeX_; i++)
+		domain_[get1DIndex(SIM_DIST_TO_PIPE + 1 + i, sourceY_ + 1)].solid = true;
+		//domain_[SIM_DIST_TO_PIPE + 1 + i][sourceY_ + 1].solid = true;
 
 	for(int i = 0; i < pipeSizeY_ + 3; i++){
-		domain_[SIM_DIST_TO_PIPE][SIM_DIST_TO_PIPE + i].solid = true;
-		domain_[domainSizeX_ - SIM_DIST_TO_PIPE - 1][SIM_DIST_TO_PIPE + i].solid = true;
+		//domain_[SIM_DIST_TO_PIPE][SIM_DIST_TO_PIPE + i].solid = true;
+		domain_[get1DIndex(SIM_DIST_TO_PIPE, SIM_DIST_TO_PIPE + 1)].solid = true;
+		//domain_[domainSizeX_ - SIM_DIST_TO_PIPE - 1][SIM_DIST_TO_PIPE + i].solid = true;
+		domain_[get1DIndex(domainSizeX_ - SIM_DIST_TO_PIPE - 1, SIM_DIST_TO_PIPE + i)].solid = true;
 	}
 
 	int mouthSize = max(1, (int)round(params_.mouthSize / SIM_CELL_SIZE));
 
 	for(int i = 0; i < 1; i++)
-		domain_[SIM_DIST_TO_PIPE][sourceY_ - 1 - i].solid = false;
+		domain_[get1DIndex(SIM_DIST_TO_PIPE, sourceY_ - 1 - i)].solid = false;
+		//domain_[SIM_DIST_TO_PIPE][sourceY_ - 1 - i].solid = false;
 
 
 	// Set excitation cells
 	for(int i = 0; i < pipeSizeX_; i++)
-		domain_[sourceX_ + i][sourceY_].excitation = true;
+		domain_[get1DIndex(sourceX_ + i, sourceY_)].excitation = true;
+		//domain_[sourceX_ + i][sourceY_].excitation = true;
 
 
 	// Precompute sigma prime for all cells
@@ -66,8 +82,8 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 			float pmlSigma = dist > SIM_PML_SIZE ? 0 : (1 - ((float)dist / SIM_PML_SIZE)) * sigma;
 
 			// Calclate sigma term
-			int beta = domain_[i][j].solid || domain_[i][j].excitation ? 1 : 0;
-			domain_[i][j].sigma = 1 / (1 + beta + pmlSigma);
+			int beta = domain_[get1DIndex(i, j)].solid || domain_[get1DIndex(i, j)].excitation ? 1 : 0;
+			domain_[get1DIndex(i, j)].sigma = 1 / (1 + beta + pmlSigma);
 		}
 	}
 
@@ -77,6 +93,89 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	// Initialize uBore history
 	uBoreHistory_ = vector<float>(2, 0);
 	uBoreFilteredHistory_ = vector<float>(2, 0);
+
+	// -------------------------------------------- //
+	// SHADER SETUP
+	// -------------------------------------------- //
+
+	std::cout << "Creating shader..." << std::endl;
+	// Require OpenGL 4.6
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	// Initialize GLFW and check success
+	if (!glfwInit())
+		std::cout << "Error initializing glfw." << std::endl;
+
+	GLFWwindow* window_ = glfwCreateWindow(100, 100, "OrganSim", NULL, NULL);
+
+	glfwMakeContextCurrent(window_);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		std::cout << "Failed to initialize OpenGL context" << std::endl;
+		exit(-1);
+	}
+
+	// Setup shaders
+	GLuint programID = glCreateProgram();
+
+	std::cout << "Compiling shader..." << std::endl;
+	GLuint shaderID = glCreateShader(GL_COMPUTE_SHADER);
+
+	if (shaderID == 0)
+		organSim::fatalError("Failed to create shader object");
+
+	// Read in the glsl source code
+	std::ifstream fileStream("C:/Users/Elijah/source/repos/OrganSimGPU/res/shaders/updatecells.comp"); // TODO don't use absolute path
+
+	if (fileStream.fail())
+		organSim::fatalError("Failed to open shader file: updatecells.comp");
+
+
+	string fileContents = "";
+	string line;
+
+	while (std::getline(fileStream, line))
+		fileContents += line + "\n";
+
+	fileStream.close();
+
+	const char* src = fileContents.c_str();
+
+	glShaderSource(shaderID, 1, &src, NULL);
+
+	glCompileShader(shaderID);
+
+	// Error checking
+	GLint success = 0;
+	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+
+	if (success == GL_FALSE) {
+		GLint maxLength = 0;
+		glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &maxLength);
+
+		char* errorLog = new char[maxLength];
+		glGetShaderInfoLog(shaderID, maxLength, &maxLength, errorLog);
+
+		glDeleteShader(shaderID);
+
+		std::cout << "Error compiling updatecells.comp: " << std::endl;
+		organSim::fatalError(errorLog);
+	}
+
+	// -------------------------------------------- //
+	// END OF SHADER SETUP
+	// -------------------------------------------- //
+
+	glAttachShader(programID, shaderID);
+	glLinkProgram(programID);
+	glValidateProgram(programID);
+
+	//glDetachShader(shaderID);
+	glDeleteShader(shaderID);
+
+	glUseProgram(programID);
 }
 
 // Run simulation until all notes have been played
@@ -113,13 +212,12 @@ void Solver::solveSteps(int steps){
 
 // Run single simulation step
 void Solver::solveStep(bool useNoteData){
-
 	// Simulation time in seconds
 	double simTime = stepNumber_ * SIM_TIME_DELTA;
 
 	// Get pressure at listening point to interpolate with later
-	float lp = domain_[listeningX_][listeningY_].pressure;
-
+	//float lp = domain_[listeningX_][listeningY_].pressure;
+	float lp = domain_[get1DIndex(listeningX_, listeningY_)].pressure;
 
 	float noteVolume = 1;
 
@@ -171,7 +269,8 @@ void Solver::solveStep(bool useNoteData){
 	if(stepNumber_ >= nextSampleStep_){
 
 		// Updated pressure
-		float lpNew = domain_[listeningX_][listeningY_].pressure;
+		//float lpNew = domain_[listeningX_][listeningY_].pressure;
+		float lpNew = domain_[get1DIndex(listeningX_, listeningY_)].pressure;
 
 		// Push ouput value, interpolated between old and updated pressure
 		output_.push_back((float)(lp + ((lpNew - lp) * (nextSampleStep_ - (int)nextSampleStep_))));
@@ -203,7 +302,8 @@ void Solver::updateExcitation(float noteVolume){
 		sourceSampleHistory_[i] = sourceSampleHistory_[i + 1];
 
 	// Store velocity from sample cell
-	SimCell& sc = domain_[sourceX_][sourceY_ - 1];
+	//SimCell& sc = domain_[sourceX_][sourceY_ - 1];
+	SimCell& sc = domain_[get1DIndex(sourceX_, sourceY_ - 1)];
 	sourceSampleHistory_[sourceSampleHistory_.size() - 1] = -sc.velX;
 
 
@@ -226,48 +326,159 @@ void Solver::updateExcitation(float noteVolume){
 	// Apply excitation
 	if(isfinite(uBoreFiltered) && uBoreFiltered < 0)
 		for(int i = 0; i < pipeSizeX_; i++)
-			domain_[sourceX_ + i][sourceY_].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
+			domain_[get1DIndex(sourceX_ + i, sourceY_)].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
+			//domain_[sourceX_ + i][sourceY_].velY = uBoreFiltered / (SIM_CELL_SIZE * pipeSizeX_);
 }
 
 void Solver::updateCells(){
+#ifdef ACCELERATION_ENABLED
+	//std::cout << "here" << std::endl;
+	// Buffer initialization
+	GLuint ssbo = 0;
 
-	for(int i = 0; i < domainSizeX_ - 1; i++){
-		for(int j = 0; j < domainSizeY_ - 1; j++){
+	// glGenBuffers(1, &ssbo);
+	//
+	// glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+	//
+	// glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SimCell) * domain_.size(), &domain_, GL_DYNAMIC_DRAW); // todo check dynamic draw if needed
 
-			// Get cells
-			SimCell& c		= domain_[i][j];
-			SimCell& cx		= domain_[i + 1][j];
-			SimCell& cy		= domain_[i][j + 1];
+	glDispatchCompute(6, 6, 1); // todo calculate dynamically
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); // probably not needed
 
-			// Update pressure
-			// Due to update pattern and zero pressure at x == 0 || y == 0, only one adjacent cell needs to be updated
-			if(j > 0){
-				float deriv = cx.velX + cx.velY - (domain_[i][j].velX + domain_[i + 1][j - 1].velY);
-				cx.pressure = (cx.pressure - (SIM_P_TERM * deriv)) * cx.sigma;
-			}
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+	
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
 
-			// X velocity standard update
-			if(!c.excitation && !c.solid && !cx.solid)
-				c.velX = (c.velX - (SIM_V_TERM * (cx.pressure - c.pressure))) * c.sigma;
+	//SimCell* ptrx;
 
-			// X velocity boundary conditions (walls)
-			else{
-				if(!c.solid && cx.solid)		c.velX = -abs(c.velX);
-				else if(c.solid && !cx.solid)	c.velX = abs(c.velX);
-			}
+	//ptrx = (SimCell*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
-			// Y velocity standard update
-			if(!c.excitation && !c.solid && !cy.solid)
-				c.velY = (c.velY - (SIM_V_TERM * (cy.pressure - c.pressure))) * c.sigma;
+	// domain_.clear();
 
-			// Y velocity boundary conditions (walls)
-			else{
-				if(!c.solid && cy.solid)		c.velY = -abs(c.velY);
-				else if(c.solid && !cy.solid)	c.velY = abs(c.velY);
-			}
-		}
-	}
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+#endif
+#ifndef ACCELERATION_ENABLED
+	// for(int i = 0; i < domainSizeX_ - 1; i++){
+	// 	for(int j = 0; j < domainSizeY_ - 1; j++){
+	//
+	// 		// Get cells
+	// 		SimCell& c		= domain_[i][j];
+	// 		SimCell& cx		= domain_[i + 1][j];
+	// 		SimCell& cy		= domain_[i][j + 1];
+	//
+	// 		// Update pressure
+	// 		// Due to update pattern and zero pressure at x == 0 || y == 0, only one adjacent cell needs to be updated
+	// 		if(j > 0){
+	// 			float deriv = cx.velX + cx.velY - (domain_[i][j].velX + domain_[i + 1][j - 1].velY);
+	// 			cx.pressure = (cx.pressure - (SIM_P_TERM * deriv)) * cx.sigma;
+	// 		}
+	//
+	// 		// X velocity standard update
+	// 		if(!c.excitation && !c.solid && !cx.solid)
+	// 			c.velX = (c.velX - (SIM_V_TERM * (cx.pressure - c.pressure))) * c.sigma;
+	//
+	// 		// X velocity boundary conditions (walls)
+	// 		else{
+	// 			if(!c.solid && cx.solid)		c.velX = -abs(c.velX);
+	// 			else if(c.solid && !cx.solid)	c.velX = abs(c.velX);
+	// 		}
+	//
+	// 		// Y velocity standard update
+	// 		if(!c.excitation && !c.solid && !cy.solid)
+	// 			c.velY = (c.velY - (SIM_V_TERM * (cy.pressure - c.pressure))) * c.sigma;
+	//
+	// 		// Y velocity boundary conditions (walls)
+	// 		else{
+	// 			if(!c.solid && cy.solid)		c.velY = -abs(c.velY);
+	// 			else if(c.solid && !cy.solid)	c.velY = abs(c.velY);
+	// 		}
+	// 	}
+	// }
+#endif
 }
+
+// void Solver::createShader()
+// {
+// 	// Require OpenGL 4.6
+// 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+// 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+// 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+//
+// 	// Initialize GLFW and check success
+// 	if (!glfwInit())
+// 		std::cout << "Error initializing glfw." << std::endl;
+//
+// 	GLFWwindow* window_ = glfwCreateWindow(100, 100, "OrganSim", NULL, NULL);
+//
+// 	glfwMakeContextCurrent(window_);
+//
+// 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+// 		std::cout << "Failed to initialize OpenGL context" << std::endl;
+// 		exit(-1);
+// 	}
+//
+// 	// Setup shaders
+// 	GLuint programID = glCreateProgram();
+// 	GLuint shaderID = compileShader();
+// 	glAttachShader(programID, shaderID);
+// 	glLinkProgram(programID);
+// 	glValidateProgram(programID);
+// 	
+//
+// 	//glDetachShader(shaderID);
+// 	glDeleteShader(shaderID);
+//
+// 	this->programID = programID;
+// }
+//
+// GLuint Solver::compileShader()
+// {
+// 	GLuint shaderID = glCreateShader(GL_COMPUTE_SHADER);
+//
+// 	if (shaderID == 0)
+// 		fatalError("Failed to create shader object");
+//
+// 	// Read in the glsl source code
+// 	std::ifstream file("C:/Users/Elijah/source/repos/OrganSimGPU/res/shaders/updatecells.comp"); // TODO don't use absolute path
+//
+// 	if (file.fail())
+// 		fatalError("Failed to open shader file: updatecells.comp");
+//
+//
+// 	string fileContents = "";
+// 	string line;
+//
+// 	while (std::getline(file, line))
+// 		fileContents += line + "\n";
+//
+// 	file.close();
+//
+// 	const char* src = fileContents.c_str();
+//
+// 	glShaderSource(shaderID, 1, &src, NULL);
+//
+// 	glCompileShader(shaderID);
+//
+// 	// Error checking
+// 	GLint success = 0;
+// 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+//
+// 	if (success == GL_FALSE) {
+// 		GLint maxLength = 0;
+// 		glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &maxLength);
+//
+// 		char* errorLog = new char[maxLength];
+// 		glGetShaderInfoLog(shaderID, maxLength, &maxLength, errorLog);
+//
+// 		glDeleteShader(shaderID);
+//
+// 		std::cout << "Error compiling updatecells.comp: " << std::endl;
+// 		fatalError(errorLog);
+// 	}
+//
+// 	return shaderID;
+// }
 
 
 int Solver::getPipeSizeX() const{
@@ -275,7 +486,7 @@ int Solver::getPipeSizeX() const{
 }
 
 const SimCell& Solver::getCell(int x, int y){
-	return domain_[x][y];
+	return domain_[get1DIndex(x, y)];
 }
 
 int Solver::getDomainSizeX() const{
@@ -308,4 +519,15 @@ float Solver::getUBore() const{
 
 const vector<float>& Solver::getOutput() const{
 	return output_;
+}
+
+SimCell* Solver::getSimCell(int x, int y)
+{
+	int index = x + y * domainSizeX_;
+	return &domain_[index];
+}
+
+int Solver::get1DIndex(int x, int y)
+{
+	return x + y * domainSizeX_;
 }

@@ -1,0 +1,19 @@
+#version 430
+
+struct ShaderData
+{
+	float velX;
+};
+
+layout(std430, binding = 0) buffer velocityX
+{
+	ShaderData data[];
+};
+
+layout (local_size_x = 1) in;
+
+void main() 
+{
+	data[0].velX = data[1].velX;
+	data[1].velX = data[0].velX;
+}
