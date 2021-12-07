@@ -209,6 +209,16 @@
 		"labiumOffset":	0.1e-3
 	},
 	
+	"G#4":{
+		"pipeWidth": 3.4e-2,
+		"pipeLength": 41.672e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1558e-3,
+		"mouthSize":	17.4e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
 	"A4":{
 		"pipeWidth": 3.25e-2,
 		"pipeLength": 39.333e-2,
@@ -244,7 +254,7 @@
 		"pipeLength": 33.075e-2,
 		
 		"maxPressure":	2000,
-		"flueWidth":	0.1462e-3,
+		"flueWidth":	0.146e-3,
 		"mouthSize":	13.7e-3,
 		"labiumOffset":	0.1e-3
 	},
@@ -321,11 +331,121 @@
 	
 	"A5":{
 		"pipeWidth": 1.9e-2,
-		"pipeLength": 19.667e-2,
+		"pipeLength": 18.563e-2,
 		
 		"maxPressure":	2000,
-		"flueWidth":	0.1611e-3,
-		"mouthSize":	7.5e-3,
+		"flueWidth":	0.1675e-3,
+		"mouthSize":	7.85e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"A#5":{
+		"pipeWidth": 1.9e-2,
+		"pipeLength": 18.563e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1695e-3,
+		"mouthSize":	7.1e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"B5":{
+		"pipeWidth": 1.8e-2,
+		"pipeLength": 17.521e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1783e-3,
+		"mouthSize":	6.65e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"C6":{
+		"pipeWidth": 1.7e-2,
+		"pipeLength": 16.537e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1512e-3,
+		"mouthSize":	6.3e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"C#6":{
+		"pipeWidth": 1.6e-2,
+		"pipeLength": 15.609e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1601e-3,
+		"mouthSize":	6e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"D6":{
+		"pipeWidth": 1.6e-2,
+		"pipeLength": 14.733e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1672e-3,
+		"mouthSize":	5.6e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"D#6":{
+		"pipeWidth": 1.5e-2,
+		"pipeLength": 13.906e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1753e-3,
+		"mouthSize":	5.3e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"E6":{
+		"pipeWidth": 1.4e-2,
+		"pipeLength": 13.126e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1855e-3,
+		"mouthSize":	4.7e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"F6":{
+		"pipeWidth": 1.4e-2,
+		"pipeLength": 12.389e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.1964e-3,
+		"mouthSize":	4.3e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"F#6":{
+		"pipeWidth": 1.34e-2,
+		"pipeLength": 11.694e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.2092e-3,
+		"mouthSize":	3.9e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"G6":{
+		"pipeWidth": 1.34e-2,
+		"pipeLength": 11.037e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.2203e-3,
+		"mouthSize":	3.75e-3,
+		"labiumOffset":	0.1e-3
+	},
+	
+	"A6":{
+		"pipeWidth": 1.34e-2,
+		"pipeLength": 9.833e-2,
+		
+		"maxPressure":	2000,
+		"flueWidth":	0.2531e-3,
+		"mouthSize":	3.1e-3,
 		"labiumOffset":	0.1e-3
 	}
 }

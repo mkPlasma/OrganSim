@@ -17,7 +17,6 @@ using std::max;
 using organSim::fatalError;
 using organSim::error;
 
-#define ACCELERATION_ENABLED
 
 Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	params_(params), notes_(notes), noteIndex_(0), finished_(false), sleep_(true), stepNumber_(0), nextSampleStep_(0) {
@@ -52,7 +51,7 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 
 	for(int i = 0; i < pipeSizeY_ + 3; i++){
 		//domain_[SIM_DIST_TO_PIPE][SIM_DIST_TO_PIPE + i].solid = true;
-		domain_[get1DIndex(SIM_DIST_TO_PIPE, SIM_DIST_TO_PIPE + 1)].solid = true;
+		domain_[get1DIndex(SIM_DIST_TO_PIPE, SIM_DIST_TO_PIPE + i)].solid = true;
 		//domain_[domainSizeX_ - SIM_DIST_TO_PIPE - 1][SIM_DIST_TO_PIPE + i].solid = true;
 		domain_[get1DIndex(domainSizeX_ - SIM_DIST_TO_PIPE - 1, SIM_DIST_TO_PIPE + i)].solid = true;
 	}
@@ -98,6 +97,7 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	// SHADER SETUP
 	// -------------------------------------------- //
 
+#ifdef ACCELERATION_ENABLED
 	std::cout << "Creating shader..." << std::endl;
 	// Require OpenGL 4.6
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -177,11 +177,14 @@ Solver::Solver(const PipeParameters& params, const vector<Note>& notes) :
 	glDeleteShader(shaderID);
 
 	glUseProgram(programID);
+#endif
 }
 
 Solver::~Solver(){
+#ifdef ACCELERATION_ENABLED
 	glfwDestroyWindow(window_);
 	glfwTerminate();
+#endif
 }
 
 // Run simulation until all notes have been played
@@ -218,6 +221,7 @@ void Solver::solveSteps(int steps){
 
 // Run single simulation step
 void Solver::solveStep(bool useNoteData){
+
 	// Simulation time in seconds
 	double simTime = stepNumber_ * SIM_TIME_DELTA;
 
@@ -314,7 +318,7 @@ void Solver::updateExcitation(float noteVolume){
 
 
 	// Calculate uBore for excitation
-	float noise = ((rand() % 1000) / 1000.0f) * 0.25f;
+	float noise = ((rand() % 1000) / 1000.0f) * 0.15f;
 	float eta = airVelocity == 0 ? 0 : ((sourceSampleHistory_[0] + noise) / airVelocity) * params_.flueWidth;
 	float uBore = noteVolume * ((SIM_CORRECTION_TERM * airVelocity) / SIM_CELL_SIZE) * tanhf(eta - params_.labiumOffset);
 
@@ -367,42 +371,42 @@ void Solver::updateCells(){
 
 #endif
 #ifndef ACCELERATION_ENABLED
-	// for(int i = 0; i < domainSizeX_ - 1; i++){
-	// 	for(int j = 0; j < domainSizeY_ - 1; j++){
-	//
-	// 		// Get cells
-	// 		SimCell& c		= domain_[i][j];
-	// 		SimCell& cx		= domain_[i + 1][j];
-	// 		SimCell& cy		= domain_[i][j + 1];
-	//
-	// 		// Update pressure
-	// 		// Due to update pattern and zero pressure at x == 0 || y == 0, only one adjacent cell needs to be updated
-	// 		if(j > 0){
-	// 			float deriv = cx.velX + cx.velY - (domain_[i][j].velX + domain_[i + 1][j - 1].velY);
-	// 			cx.pressure = (cx.pressure - (SIM_P_TERM * deriv)) * cx.sigma;
-	// 		}
-	//
-	// 		// X velocity standard update
-	// 		if(!c.excitation && !c.solid && !cx.solid)
-	// 			c.velX = (c.velX - (SIM_V_TERM * (cx.pressure - c.pressure))) * c.sigma;
-	//
-	// 		// X velocity boundary conditions (walls)
-	// 		else{
-	// 			if(!c.solid && cx.solid)		c.velX = -abs(c.velX);
-	// 			else if(c.solid && !cx.solid)	c.velX = abs(c.velX);
-	// 		}
-	//
-	// 		// Y velocity standard update
-	// 		if(!c.excitation && !c.solid && !cy.solid)
-	// 			c.velY = (c.velY - (SIM_V_TERM * (cy.pressure - c.pressure))) * c.sigma;
-	//
-	// 		// Y velocity boundary conditions (walls)
-	// 		else{
-	// 			if(!c.solid && cy.solid)		c.velY = -abs(c.velY);
-	// 			else if(c.solid && !cy.solid)	c.velY = abs(c.velY);
-	// 		}
-	// 	}
-	// }
+	for(int i = 0; i < domainSizeX_ - 1; i++){
+		for(int j = 0; j < domainSizeY_ - 1; j++){
+	
+			// Get cells
+			SimCell& c		= domain_[get1DIndex(i, j)];
+			SimCell& cx		= domain_[get1DIndex(i + 1, j)];
+			SimCell& cy		= domain_[get1DIndex(i, j + 1)];
+	
+			// Update pressure
+			// Due to update pattern and zero pressure at x == 0 || y == 0, only one adjacent cell needs to be updated
+			if(j > 0){
+				float deriv = cx.velX + cx.velY - (c.velX + domain_[get1DIndex(i + 1, j - 1)].velY);
+				cx.pressure = (cx.pressure - (SIM_P_TERM * deriv)) * cx.sigma;
+			}
+	
+			// X velocity standard update
+			if(!c.excitation && !c.solid && !cx.solid)
+				c.velX = (c.velX - (SIM_V_TERM * (cx.pressure - c.pressure))) * c.sigma;
+	
+			// X velocity boundary conditions (walls)
+			else{
+				if(!c.solid && cx.solid)		c.velX = -abs(c.velX);
+				else if(c.solid && !cx.solid)	c.velX = abs(c.velX);
+			}
+	
+			// Y velocity standard update
+			if(!c.excitation && !c.solid && !cy.solid)
+				c.velY = (c.velY - (SIM_V_TERM * (cy.pressure - c.pressure))) * c.sigma;
+	
+			// Y velocity boundary conditions (walls)
+			else{
+				if(!c.solid && cy.solid)		c.velY = -abs(c.velY);
+				else if(c.solid && !cy.solid)	c.velY = abs(c.velY);
+			}
+		}
+	}
 #endif
 }
 

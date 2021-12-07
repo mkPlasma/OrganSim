@@ -21,6 +21,9 @@ using std::vector;
 using std::string;
 
 
+// Use GPU acceleration
+//#define ACCELERATION_ENABLED
+
 // Speed of sound waves (m/s)
 #define SIM_SPEED_OF_SOUND 346.13f
 

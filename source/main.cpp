@@ -24,8 +24,9 @@ using std::max;
 #define GEOMETRY_FILE	"res/pipes.json"
 #define MIDI_FILE		"res/test5.mid"
 #define OUTPUT_FILE		"out"
-#define DEBUG_PIPE		"F#5"
+#define DEBUG_PIPE		"A5"
 #define DEBUG_TIME		1
+//#define OCTAVE_DOUBLER
 
 //#define DEBUG_VIS
 //#define DEBUG_SINGLE_PIPE
@@ -238,26 +239,27 @@ int main(){
 
 
 	// Start timer. This is the important part which we are accelerating.
-	auto start = std::chrono::steady_clock::now();
+	start = std::chrono::steady_clock::now();
 
 	solver.solveSeconds(DEBUG_TIME);
 
-	// Stop timer.
-	auto end = std::chrono::steady_clock::now();
-	cout << "Solver took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds." << endl;
-
 	vector<float> output = solver.getOutput();
 
-	return 0;
 #endif
 #ifndef DEBUG_SINGLE_PIPE
 
 	vector<vector<float>> outputVec;
 
 	// Check each pipe is present
-	for(auto& i : notes)
+	for(auto& i : notes){
 		if(manager.getPipes().find(i.first) == manager.getPipes().end())
 			cout << "Missing note " << i.first << endl;
+
+#ifdef OCTAVE_DOUBLER
+		if(manager.getPipes().find(i.first + 12) == manager.getPipes().end())
+			cout << "Missing note " << (i.first + 12) << endl;
+#endif
+	}
 
 	int index = 1;
 
@@ -268,6 +270,12 @@ int main(){
 		Solver solver(manager.getPipes()[i.first], i.second);
 		solver.solve();
 		outputVec.push_back(solver.getOutput());
+
+#ifdef OCTAVE_DOUBLER
+		Solver solver2(manager.getPipes()[i.first + 12], i.second);
+		solver2.solve();
+		outputVec.push_back(solver2.getOutput());
+#endif
 	}
 
 	// Get longest output size
@@ -288,12 +296,14 @@ int main(){
 
 	cout << "Simulation complete, saving file..." << endl;
 
+	auto end = std::chrono::steady_clock::now();
+	cout << "Solver took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds." << endl;
+
 	AudioFile<float> file;
 	file.setNumChannels(2);
 	file.setNumSamplesPerChannel((int)output.size());
 
-	// Normalize audio level, temporary
-	// TODO: remove this
+	// Normalize audio level
 	float max = 0;
 
 	for(float f : output)
@@ -315,6 +325,4 @@ int main(){
 		for(int i = 1; i < 100; i++)
 			if(file.save(OUTPUT_FILE + std::to_string(i) + ".wav", AudioFileFormat::Wave))
 				break;
-	auto end = std::chrono::steady_clock::now();
-	cout << "Solver took " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " milliseconds." << endl;
 }
